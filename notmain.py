@@ -1,8 +1,11 @@
-import time
+from time import sleep
 import network
 from machine import Pin
 from umqtt.simple import MQTTClient
+from machine import RTC
 from secret import ssid, password
+
+rtc = RTC()
 
 # Setup the onboard LED so we can turn it on/off
 led = Pin("LED", Pin.OUT)
@@ -17,7 +20,7 @@ wlan.active(True)
 wlan.connect(wifi_ssid, wifi_password)
 while wlan.isconnected() == False:
     print('Waiting for connection...')
-    time.sleep(1)
+    sleep(1)
 status = wlan.ifconfig()
 print('connection to', ssid,'succesfull established!')
 print('IP-adress: ' + status[0])
@@ -25,14 +28,11 @@ print('IP-adress: ' + status[0])
 # Fill in your Adafruit IO Authentication and Feed MQTT Topic details
 mqtt_host = "io.adafruit.com"
 mqtt_username = "TheLowSpecPC"  # Your Adafruit IO username
-mqtt_password = "aio_oqNV12FqGxGzk9Fnk0SWIxFJOFxP"  # Adafruit IO Key
+mqtt_password = "aio_YVvj55rpthSeASH0h6A9vK1FzC3D"  # Adafruit IO Key
 relay1_toggle = "TheLowSpecPC/feeds/toggle"
 timer_toggle = "TheLowSpecPC/feeds/timer"
 hours_feed = "TheLowSpecPC/feeds/hours"
 minutes_feed = "TheLowSpecPC/feeds/minutes"
-
-hours = ''
-minutes = ''
 
 # Enter a random ID for this MQTT Client
 # It needs to be globally unique across all of Adafruit IO.
@@ -74,12 +74,32 @@ def toggle(topic, message):
         
         if message == b'start':
             with open('hours.txt', 'r') as hr:
-                hours = hr.read()
+                hrs = hr.read()
                 hr.close()
             with open('minutes.txt', 'r') as mr:
-                minutes = mr.read()
+                mins = mr.read()
                 mr.close()
-            print(hours+":"+minutes)
+            startTime = rtc.datetime()
+            day = startTime[2]
+            hours = startTime[4] + int(hrs)
+            minutes = startTime[5] + int(mins)
+            
+            if int(hrs) > 23:
+                day = day+1
+            if hours > 23:
+                hours = hours-24
+            if minutes > 60:
+                minutes = minutes-60
+            
+            a=0
+            while a==0:
+                endTime = rtc.datetime()
+                if endTime[2]==day and endTime[4]==hours and endTime[5]==minutes:
+                    a = a+1
+                    mqtt_client.publish(timer_toggle, "stop")
+                mqtt_client.check_msg()
+                sleep(20)
+                
 
 # Before connecting, tell the MQTT client to use the callback
 mqtt_client.set_callback(toggle)
@@ -88,7 +108,7 @@ try:
     mqtt_client.connect()
 except OSError as e:
     print('Failed to connect to the MQTT Broker. Reconnecting...')
-    time.sleep(5)
+    sleep(5)
     machine.reset()
 
 # Set the initial state of the LED to off, and let the MQTT topic know about it

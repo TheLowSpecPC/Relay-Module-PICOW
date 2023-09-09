@@ -8,9 +8,6 @@ import utime as time
 ssid = secret.ssid
 password = secret.password
 
-# NTP-Host
-NTP_HOST = 'pool.ntp.org'
-
 # Funktion: get time from NTP Server
 def getTimeNTP(UTC_OFFSET=+5):
     ntptime.settime()
@@ -20,6 +17,7 @@ def getTimeNTP(UTC_OFFSET=+5):
 def setTimeRTC():
     tm = getTimeNTP()
     rtc.datetime((tm[0], tm[1], tm[2], tm[6] + 1, tm[3], tm[4], tm[5], 0))
+    return rtc.datetime()
     
 def check_alarm(set_year,set_month,set_day,set_hour,set_minute):
     time = rtc.datetime()
@@ -31,37 +29,17 @@ def check_alarm(set_year,set_month,set_day,set_hour,set_minute):
         print("time to alarm:  " + str(set_year) +" " + str(set_month) + " " + str(set_day) + " " + str(set_hour) + " " + str(set_minute))
 
   
-wlan = network.WLAN(network.STA_IF)
-wlan.active(True)
-wlan.connect(ssid, password)
-while wlan.isconnected() == False:
-    print('Waiting for connection...')
-    time.sleep(1)
-status = wlan.ifconfig()
-print('connection to', ssid,'succesfull established!')
-print('IP-adress: ' + status[0])
+#wlan = network.WLAN(network.STA_IF)
+#wlan.active(True)
+#wlan.connect(ssid, password)
+#while wlan.isconnected() == False:
+#    print('Waiting for connection...')
+#    time.sleep(1)
+#status = wlan.ifconfig()
+#print('connection to', ssid,'succesfull established!')
+#print('IP-adress: ' + status[0])
     
 
 rtc = RTC()  
 
-# Zeit setzen
-setTimeRTC()
-
-# Aktuelles Datum ausgeben
-print()
-print(rtc.datetime())
-
-while True:
-    print(rtc.datetime())
-    sleep(2)
-#    year=2023
-#    month=1
-#    day=20
-#    hour=20
-#    minute=18
-#    check_alarm(year,month,day,hour,minute)
-#    sleep(10)
-
-
-
-
+print(setTimeRTC())
